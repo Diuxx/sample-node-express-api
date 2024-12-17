@@ -1,0 +1,5 @@
+npm i express --save
+npm install cookie-parser
+npm i express-fileupload
+npm install cors
+npm i sqlite3
