@@ -5,7 +5,7 @@ const express = require('express');
 const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
 
-// get all data
+// get all samples
 router.get('/', async (req, res) => {
     try {
         req.base.all(`SELECT id, content, created_at, updated_at FROM sample`, (err, rows) => {
@@ -27,19 +27,24 @@ router.get('/', async (req, res) => {
     }
 });
 
+// get one sample
 router.get('/:id', async (req, res) => {
-    const { id } = req.params;
-
     try {
-        const base = req.base;
-        console.log(base)
-        res.status(200).json(base.data);
+        const { id } = req.params;
+
+        req.base.get(`SELECT content FROM sample WHERE id = ?`, [id], (err, row) => {
+            if (err) return res.status(500).json({ error: err.message });
+            if (!row) return res.status(404).json({ error: 'Fichier non trouvé' });
+    
+            res.json(JSON.parse(row.content));
+        });
     } 
     catch (err) {
         res.status(500).json({ message: err.message });
     }
 });
 
+// post one sample
 router.post('/', async (req, res) => {
     try {
         const { content } = req.body;
@@ -47,7 +52,7 @@ router.post('/', async (req, res) => {
         const createdAt = new Date().toISOString(), updatedAt = createdAt;
     
         req.base.run(
-            `INSERT INTO json_files (id, content, created_at, updated_at) VALUES (?, ?, ?, ?)`,
+            `INSERT INTO sample (id, content, created_at, updated_at) VALUES (?, ?, ?, ?)`,
             [id, JSON.stringify(content), createdAt, updatedAt || null],
             function (err) {
                 if (err) throw err.message;
@@ -61,12 +66,20 @@ router.post('/', async (req, res) => {
 });
 
 router.put('/:id', async (req, res) => {
-    const { id } = req.params;
-
     try {
-        const base = req.base;
-        console.log(base)
-        res.status(200).json(base.data);
+        const { id } = req.params;
+        const { content } = req.body;
+    
+        req.base.run(
+            `UPDATE sample SET content = ?, updated_at = ? WHERE id = ?`,
+            [JSON.stringify(content), new Date().toISOString(), id],
+            function (err) {
+                if (err) return res.status(500).json({ error: err.message });
+                if (this.changes === 0) return res.status(404).json({ error: 'Fichier non trouvé' });
+    
+                res.json({ message: 'Fichier mis à jour avec succès' });
+            }
+        );
     } 
     catch (err) {
         res.status(500).json({ message: err.message });
@@ -74,13 +87,15 @@ router.put('/:id', async (req, res) => {
 });
 
 router.delete('/:id', async (req, res) => {
-    const { id } = req.params;
-
-
     try {
-        const base = req.base;
-        console.log(base)
-        res.status(200).json(base.data);
+        const { id } = req.params;
+
+        req.base.run(`DELETE FROM sample WHERE id = ?`, [id], function (err) {
+            if (err) return res.status(500).json({ error: err.message });
+            if (this.changes === 0) return res.status(404).json({ error: 'Fichier non trouvé' });
+    
+            res.json({ message: 'Fichier supprimé avec succès' });
+        });
     } 
     catch (err) {
         res.status(500).json({ message: err.message });
