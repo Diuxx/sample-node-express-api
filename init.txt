@@ -5,6 +5,7 @@ npm install cors
 npm i nodemon --save
 npm i sqlite3
 npm i uuid
+npm i morgan
 
 # queries
 

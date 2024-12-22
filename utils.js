@@ -14,3 +14,14 @@ export async function readJsonSync(file, format = 'utf8') {
     let data = await promises.readFile(file, { encoding: format });
     return JSON.parse(data);
 }
+
+export function stringInBit(string) {
+    // Encodage de la chaîne en UTF-8
+    const encoder = new TextEncoder();
+    const encodedString = encoder.encode(string);
+
+    // Taille en bits (chaque octet = 8 bits)
+    const sizeInBits = encodedString.length * 8;
+
+    return sizeInBits;
+}

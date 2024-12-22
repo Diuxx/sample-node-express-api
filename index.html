@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <!-- Primary Meta Tags -->
+  <title>JSONBase - Manage 1 MB of JSON Data Available Everywhere</title>
+  <meta name="description" content="JSONBase simplifies the management of up to 1 MB of JSON data. Access, edit, and store your JSON data anywhere with ease. Perfect for developers and teams.">
+  
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://www.jsonbase.com/">
+  <meta property="og:title" content="JSONBase - Manage 1 MB of JSON Data Available Everywhere">
+  <meta property="og:description" content="Simplify JSON data management. Manage up to 1 MB of JSON data from anywhere. Secure, fast, and developer-friendly.">
+  <meta property="og:image" content="https://www.jsonbase.com/assets/og-image.png">
+  
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:url" content="https://www.jsonbase.com/">
+  <meta property="twitter:title" content="JSONBase - Manage 1 MB of JSON Data Available Everywhere">
+  <meta property="twitter:description" content="Simplify JSON data management. Manage up to 1 MB of JSON data from anywhere. Secure, fast, and developer-friendly.">
+  <meta property="twitter:image" content="https://www.jsonbase.com/assets/twitter-image.png">
+  
+  <!-- Favicon -->
+  <link rel="icon" href="https://www.jsonbase.com/favicon.ico" type="image/x-icon">
+  
+  <!-- Keywords (Optional for modern SEO but still useful for context) -->
+  <meta name="keywords" content="JSONBase, JSON data, manage JSON, online JSON storage, 1 MB JSON, developer tools, data management, SaaS JSON">
+  
+  <!-- Canonical URL -->
+  <link rel="canonical" href="https://www.jsonbase.com/">
+
+  <!-- Other meta tags -->
+  <meta name="author" content="JSONBase Team">
+  <meta name="robots" content="index, follow">
+
+  <!-- styles -->
+  <link href="style.css" rel="stylesheet" />
+  <link href="libs/prism.css" rel="stylesheet" />
+</head>
+<body>
+  <div class="container">
+    <h1>Sample API</h1>
+    <h2>manage 1 mo of <i style="color: red;">JSON</i> data available everywhere.</h2>
+
+    <!-- API Key Input -->
+    <div class="api-key-container">
+      <label for="api-key" style="margin-right: 10px;">API Key:</label>
+      <input type="text" id="api-key" placeholder="Enter your API key">
+      <button onclick="connect()">Connect</button>
+    </div>
+
+    <!-- Editable Code Area -->
+    <div id="editor">
+      <pre><code contenteditable="true" class="language-json" id="editable-code">p { color: red }</code></pre>
+    </div>
+
+    <span id="m-error"></span>
+    <span id="m-success"></span>
+
+    <!-- Save Button -->
+    <button id="save" class="save" onclick="saveCode()">Sauvegarder</button>
+    <button id="disconnect" class="save" onclick="quitter()">Se déconnecter</button>
+  </div>
+
+  <!-- modals -->
+  <div class="modal-overlay" id="modal-yn">
+    <div class="modal">
+      <h2 id="modal-yn-title"></h2>
+      <button class="yes" id="yes-btn">Yes</button>
+      <button class="no" id="no-btn">No</button>
+    </div>
+  </div>
+
+  <script src="libs/prism.js" data-manual></script>
+  <script src="page.js"></script>
+  <script>
+    // mock pour tests.
+    const mockSampleId = "32c3707f-4ee4-491a-93a6-9ca6b828014b";
+    const apiUrl = 'http://localhost:3000/sample';
+    let loading = false;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      // --
+      autoConnect();
+      console.log(document.getElementById("api-key").value);
+      if (!document.getElementById("api-key").value)
+        setSampleId(mockSampleId);
+    });
+
+    /* -------------- Functions -------------- */
+    function connect(key = null) {
+      const sampleId = key || document.getElementById("api-key").value;
+      const url = `${apiUrl}/${sampleId}`;
+
+      if (!sampleId) {
+        displayMessage('veuillez saisir une clé d\'API.', 'm-error');
+        return;
+      }
+
+      fetch(url)
+        .then(async response => {
+            if (!response.ok) {
+              err = await response.json()
+              throw new Error(err.message);
+            }
+            return response.json();
+          })
+          .then(data => {
+            console.log("Résultat de la requête :", data, );
+            code.innerHTML = Prism.highlight(JSON.stringify(data, null, 4), Prism.languages.json, 'json'); //"`" + JSON.stringify(data) + "`"; //JSON.stringify(`${data}`, null, 2);
+            // document.querySelector('.language-json').innerHTML = Prism.highlight(code, Prism.languages.json, 'json');
+
+            editor.style.display = 'block';
+            Prism.highlightAll();
+            this.persistConnection(sampleId);
+        })
+        .catch(error => {
+            console.error("Erreur lors de la requête :", error);
+            if (error?.error) {
+              displayMessage(`Error: ${error.error.message}`, 'm-error');
+            }
+            else 
+              displayMessage(`Error: ${error.message}`, 'm-error');
+        });
+    }
+
+    /**
+     * 
+     **/
+    async function saveCode() {
+      // const data = verifyJson();
+      const sampleId = document.getElementById("api-key").value;
+      const url = `http://localhost:3000/sample/${sampleId}`;
+
+      if (!isValidJSON(code.textContent)) {
+        console.error("Invalid json.");
+        displayMessage("Invalid json.", 'm-error');
+        return;
+      }
+
+      const data = { 
+        content: JSON.stringify(JSON.parse(code.textContent))
+      };
+      console.log(data, JSON.stringify(JSON.parse(code.textContent)));
+
+      try {
+            const response = await fetch(url, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(data)
+            });
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            const result = await response.json();
+            displayMessage("Modification effectuée avec succès.", 'm-success');
+            console.log("Réponse du serveur :", result);
+        } 
+        catch (error) {
+            displayMessage(error.message, 'm-error');
+            console.error("Erreur lors de la requête POST :", error);
+        }
+    }
+
+    function verifyJson(jsonString) {
+      try {
+        let cleanData = jsonString.trim();
+        cleanData = cleanData.replace(/\\n/g, '').replace(/\\"/g, '"').split('n/').join('');
+        // cleanData = JSON.parse(cleanData);
+
+        return cleanData; // JSON.stringify(cleanData, null, 2);
+      } 
+      catch (e) {
+        console.error("Erreur lors du nettoyage du JSON :", e);
+        return null; 
+      }
+    }
+
+    function persistConnection(apiKey) {
+      localStorage.setItem('sampleId', apiKey);
+      localStorage.setItem('isLogged', true);
+    }
+
+    function disconnect() {
+      localStorage.clear();
+      editor.style.display = 'none';
+      this.setSampleId('');
+    }
+
+    function isConnected() {
+      return localStorage.getItem('isLogged') !== null && 
+             localStorage.getItem('sampleId')?.includes('true') !== null;
+    }
+
+    function autoConnect() {
+      if (!this.isConnected()) 
+        return;
+
+      const idKey = localStorage.getItem('sampleId');
+      this.connect(idKey);
+    }
+
+  </script>
+</body>
+</html>
