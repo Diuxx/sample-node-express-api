@@ -40,24 +40,48 @@
   <link href="libs/prism.css" rel="stylesheet" />
 </head>
 <body>
+  <div class="header">
+    <div class="profile">
+      <img id="user-photo" src="libs/icons8-google.svg" alt="Photo de profil">
+    </div>
+    <div id="logout" class="logout">
+      <a id="google-logout-btn" href="">Se déconnecter</a>
+    </div>
+  </div> 
   <div class="container">
-    <h1>Sample API</h1>
+    <h1>Sample API</h1> 
     <h2>manage 1 mo of <i style="color: red;">JSON</i> data available everywhere.</h2>
+
+    <div class="connect">
+      <button id="google-signin-btn" class="google-signin-btn">
+        <img src="libs/icons8-google.svg" alt="Google Logo" />
+        Se connecter avec Google
+      </button>
+    </div>
+
+    <button onclick="connectApi()">test</button>
 
     <!-- API Key Input -->
     <div class="api-key-container">
-      <label for="api-key" style="margin-right: 10px;">API Key:</label>
-      <input type="text" id="api-key" placeholder="Enter your API key">
-      <button onclick="connect()">Connect</button>
+      <label for="api-key" style="margin-right: 10px;">API Key :</label>
+      <input type="text" id="api-key" placeholder="Your current API Key">
+      <!-- <button onclick="connectApi()">Connect</button> -->
     </div>
 
     <!-- Editable Code Area -->
     <div id="editor">
+      <div id="size"></div>
       <pre><code contenteditable="true" class="language-json" id="editable-code">p { color: red }</code></pre>
+      <div class="serv-messages">
+        <span id="m-error"></span>
+        <span id="m-success"></span>
+      </div>
     </div>
 
-    <span id="m-error"></span>
-    <span id="m-success"></span>
+    <div id="editor-example">
+      <div id="size-example"></div>
+      <pre><code class="language-json" id="example-editable-code"></code></pre>
+    </div>
 
     <!-- Save Button -->
     <button id="save" class="save" onclick="saveCode()">Sauvegarder</button>
@@ -73,64 +97,25 @@
     </div>
   </div>
 
+  <!-- js-->
+  <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-auth-compat.js"></script>
+  <script src="libs/api-queries.js"></script>
+  <script src="libs/google.js"></script>
   <script src="libs/prism.js" data-manual></script>
   <script src="page.js"></script>
   <script>
     // mock pour tests.
     const mockSampleId = "32c3707f-4ee4-491a-93a6-9ca6b828014b";
-    const apiUrl = 'http://localhost:3000/sample';
+    // const apiUrl = 'http://localhost:3000/sample';
     let loading = false;
 
-    document.addEventListener('DOMContentLoaded', () => {
-      // --
-      autoConnect();
-      console.log(document.getElementById("api-key").value);
-      if (!document.getElementById("api-key").value)
-        setSampleId(mockSampleId);
-    });
-
     /* -------------- Functions -------------- */
-    function connect(key = null) {
-      const sampleId = key || document.getElementById("api-key").value;
-      const url = `${apiUrl}/${sampleId}`;
-
-      if (!sampleId) {
-        displayMessage('veuillez saisir une clé d\'API.', 'm-error');
-        return;
-      }
-
-      fetch(url)
-        .then(async response => {
-            if (!response.ok) {
-              err = await response.json()
-              throw new Error(err.message);
-            }
-            return response.json();
-          })
-          .then(data => {
-            console.log("Résultat de la requête :", data, );
-            code.innerHTML = Prism.highlight(JSON.stringify(data, null, 4), Prism.languages.json, 'json'); //"`" + JSON.stringify(data) + "`"; //JSON.stringify(`${data}`, null, 2);
-            // document.querySelector('.language-json').innerHTML = Prism.highlight(code, Prism.languages.json, 'json');
-
-            editor.style.display = 'block';
-            Prism.highlightAll();
-            this.persistConnection(sampleId);
-        })
-        .catch(error => {
-            console.error("Erreur lors de la requête :", error);
-            if (error?.error) {
-              displayMessage(`Error: ${error.error.message}`, 'm-error');
-            }
-            else 
-              displayMessage(`Error: ${error.message}`, 'm-error');
-        });
-    }
 
     /**
      * 
      **/
     async function saveCode() {
-      // const data = verifyJson();
       const sampleId = document.getElementById("api-key").value;
       const url = `http://localhost:3000/sample/${sampleId}`;
 
@@ -194,14 +179,6 @@
     function isConnected() {
       return localStorage.getItem('isLogged') !== null && 
              localStorage.getItem('sampleId')?.includes('true') !== null;
-    }
-
-    function autoConnect() {
-      if (!this.isConnected()) 
-        return;
-
-      const idKey = localStorage.getItem('sampleId');
-      this.connect(idKey);
     }
 
   </script>

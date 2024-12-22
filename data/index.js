@@ -12,32 +12,57 @@ module.exports = (config) => {
     console.log(`[${config.name}][✔] database created ${pathData}`);
 
     // if sample running 
-    if (config.sample) {        
-        db.run(`CREATE TABLE IF NOT EXISTS sample (
-            id TEXT PRIMARY KEY,
-            content TEXT NOT NULL,
-            created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL
-        )`);
+    if (config.sample) {
+        db.run(`
+            CREATE TABLE IF NOT EXISTS user (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                google_uid TEXT UNIQUE NOT NULL,
+                api_key TEXT UNIQUE NOT NULL
+            )`);
+        
+        db.run(`
+            CREATE TABLE IF NOT EXISTS sample (
+                id TEXT PRIMARY KEY,
+                content TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                user_id TEXT NOT NULL,
+                FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE
+            )`);
 
-        db.get(`SELECT COUNT(*) AS count FROM sample`, (err, row) => {
+        db.get(`SELECT COUNT(*) AS count FROM user JOIN sample ON user.id = sample.user_id`, (err, row) => {
             if (err) {
-                console.error('Erreur lors de la vérification de la table :', err.message);
+                console.error('Erreur lors de la vérification des tables :', err.message);
                 return;
             }
-        
+
             if (row.count === 0) {
-                const now = new Date().toISOString();
-        
+                const sampleDataObject = {
+                    now: new Date().toISOString(),
+                    userUid: uuidv4(),
+                    userGoogleUid: uuidv4(),
+                    userApiKey: uuidv4()
+                }
+
+                const sampleUserData = [{ id: sampleDataObject.userUid, name: 'sample', google_uid: sampleDataObject.userGoogleUid, api_key: sampleDataObject.userApiKey }];
+                const stmtUser = db.prepare(`INSERT INTO user (id, name, google_uid, api_key) VALUES (?, ?, ?, ?)`);
+                sampleUserData.forEach((data) => {
+                    stmtUser.run(data.id, data.name, data.google_uid, data.api_key, (err) => {
+                        if (err) {
+                            console.error('Erreur lors de l\'insertion :', err.message);
+                        }
+                    });
+                });
+                stmtUser.finalize(() => console.log('User data inserted.'));
+
+                // sample data
                 const sampleData = [
-                    { id: uuidv4(), content: JSON.stringify({ value: "Default value 1" }), created_at: now, updated_at: now },
-                    { id: uuidv4(), content: JSON.stringify({ value: "Default value 2" }), created_at: now, updated_at: now }
+                    { id: uuidv4(), content: JSON.stringify({ value: "Default value 1" }), created_at: sampleDataObject.now, updated_at: sampleDataObject.now, user_id: sampleDataObject.userUid },
                 ];
-        
-                const stmt = db.prepare(`INSERT INTO sample (id, content, created_at, updated_at) VALUES (?, ?, ?, ?)`);
-        
+                const stmt = db.prepare(`INSERT INTO sample (id, content, created_at, updated_at, user_id) VALUES (?, ?, ?, ?, ?)`);
                 sampleData.forEach((data) => {
-                    stmt.run(data.id, data.content, data.created_at, data.updated_at, (err) => {
+                    stmt.run(data.id, data.content, data.created_at, data.updated_at, data.user_id, (err) => {
                         if (err) {
                             console.error('Erreur lors de l\'insertion :', err.message);
                         }
@@ -46,10 +71,8 @@ module.exports = (config) => {
         
                 stmt.finalize(() => console.log('Données par défaut insérées.'));
             }
-            else {
-                console.log('La table sample contient déjà des données.');
-            }
         });
+        
         console.log(`[${config.name}][✔] init sample data`)
     }
     

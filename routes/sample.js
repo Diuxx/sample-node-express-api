@@ -4,6 +4,11 @@
 const express = require('express');
 const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
+const {
+    isGoogleAccExist,
+    createUserWithGoogleUid,
+    getUserApiKeyWithGoogleUid
+} = require('../data/sample_access');
 
 // get all samples
 router.get('/', async (req, res) => {
@@ -66,6 +71,37 @@ router.post('/', async (req, res) => {
     }
 });
 
+// create or get one sample
+router.post('/retrieve', async (req, res) => {
+    try {
+        const { google_uid, google_name } = req.body;
+
+        if (!google_uid) {
+            res.status(400).json({ message: 'google_uid is required.' });
+            return;
+        }
+
+        if (!google_name) {
+            res.status(400).json({ message: 'google_name is required.' });
+            return;
+        }
+
+        const exist = await isGoogleAccExist(req.base, google_uid);
+        if (exist) {
+            const apiKey = await getUserApiKeyWithGoogleUid(req.base, google_uid);
+            res.status(200).json({ key: apiKey });
+        }
+        else {
+            const user = await createUserWithGoogleUid(req.base, google_uid, google_name)
+            res.status(200).json({ key: user.api_key });
+        }
+    }
+    catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// put one sample
 router.put('/:id', async (req, res) => {
     try {
         const { id } = req.params;

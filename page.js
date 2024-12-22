@@ -10,7 +10,6 @@ const editor = document.getElementById('editor');
 
 // listeners
 code.addEventListener('input', () => {
-    // console.log(`Content updated: ${code.textContent}`);
     highlightWithoutMovingCursor();
 });
 
