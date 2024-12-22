@@ -17,7 +17,7 @@ module.exports = (config) => {
             CREATE TABLE IF NOT EXISTS user (
                 id TEXT PRIMARY KEY,
                 name TEXT NOT NULL,
-                google_uid TEXT UNIQUE NOT NULL,
+                google_uid TEXT UNIQUE,
                 api_key TEXT UNIQUE NOT NULL
             )`);
         
@@ -72,7 +72,7 @@ module.exports = (config) => {
                 stmt.finalize(() => console.log('Données par défaut insérées.'));
             }
         });
-        
+
         console.log(`[${config.name}][✔] init sample data`)
     }
     

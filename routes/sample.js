@@ -4,28 +4,13 @@
 const express = require('express');
 const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
-const {
-    isGoogleAccExist,
-    createUserWithGoogleUid,
-    getUserApiKeyWithGoogleUid
-} = require('../data/sample_access');
+const dao = require('../data/sample.dao');
 
 // get all samples
 router.get('/', async (req, res) => {
     try {
-        req.base.all(`SELECT id, content, created_at, updated_at FROM sample`, (err, rows) => {
-            if (err) throw err.message;//res.status(500).json({ message:  });
-    
-            // Transformer les contenus JSON pour qu'ils soient bien parsés
-            const results = rows.map((row) => ({
-                id: row.id,
-                content: row.content,
-                created_at: row.created_at,
-                updated_at: row.updated_at
-            }));
-    
-            res.json(results);
-        });
+        const results = await dao.getAll(req.base);
+        res.status(200).json(results);
     } 
     catch (err) {
         res.status(500).json({ message: err.message });
@@ -36,14 +21,28 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        console.log(id);
+        if (!id) {
+            res.status(400).json({ message: 'id is required.' });
+            return;
+        }
 
-        req.base.get(`SELECT content FROM sample WHERE id = ?`, [id], (err, row) => {
-            if (err) return res.status(500).json({ message: err.message });
-            if (!row) return res.status(404).json({ message: 'unable to find current key.' });
-    
-            res.json(JSON.parse(row.content));
-        });
+        res.json(await dao.getSampleContent(req.base, id));
+    } 
+    catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// get one sample by apiKey
+router.get('/bykey/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (!id) {
+            res.status(400).json({ message: 'id is required.' });
+            return;
+        }
+
+        res.status(200).json(await dao.getSampleContentByKey(req.base, id));
     } 
     catch (err) {
         res.status(500).json({ message: err.message });
@@ -53,18 +52,14 @@ router.get('/:id', async (req, res) => {
 // post one sample
 router.post('/', async (req, res) => {
     try {
-        const { content } = req.body;
-        const id = uuidv4();
-        const createdAt = new Date().toISOString(), updatedAt = createdAt;
-    
-        req.base.run(
-            `INSERT INTO sample (id, content, created_at, updated_at) VALUES (?, ?, ?, ?)`,
-            [id, JSON.stringify(content), createdAt, updatedAt || null],
-            function (err) {
-                if (err) throw err.message;
-                res.status(201).json({ id, url: `/sample/${id}` });
-            }
-        );
+        const { userId } = req.body;
+        if (!userId) {
+            res.status(400).json({ message: 'userId is required.' });
+            return;
+        }
+
+        await dao.create(req.base, userId);
+        res.status(201).json({ id, url: `/sample/${id}` });
     } 
     catch (err) {
         res.status(500).json({ message: err.message });
@@ -86,13 +81,17 @@ router.post('/retrieve', async (req, res) => {
             return;
         }
 
-        const exist = await isGoogleAccExist(req.base, google_uid);
+        const exist = await dao.isGoogleAccExist(req.base, google_uid);
         if (exist) {
-            const apiKey = await getUserApiKeyWithGoogleUid(req.base, google_uid);
+            const apiKey = await dao.getUserApiKeyWithGoogleUid(req.base, google_uid);
             res.status(200).json({ key: apiKey });
         }
         else {
-            const user = await createUserWithGoogleUid(req.base, google_uid, google_name)
+            const user = await dao.createUserWithGoogleUid(req.base, google_uid, google_name);
+            if (user) {
+                // create sample
+                await dao.create(user.id);
+            }
             res.status(200).json({ key: user.api_key });
         }
     }
@@ -114,17 +113,8 @@ router.put('/:id', async (req, res) => {
 
         if (typeof content == 'string')
             content = JSON.parse(content);
-    
-        req.base.run(
-            `UPDATE sample SET content = ?, updated_at = ? WHERE id = ?`,
-            [JSON.stringify(content), new Date().toISOString(), id],
-            function (err) {
-                if (err) return res.status(500).json({ message: err.message });
-                if (this.changes === 0) return res.status(404).json({ message: 'unable to find current key.' });
-    
-                res.json({ message: 'Fichier mis à jour avec succès' });
-            }
-        );
+
+        res.status(200).json(await dao.update(req.base, id, content));
     } 
     catch (err) {
         console.log(err);
@@ -132,16 +122,11 @@ router.put('/:id', async (req, res) => {
     }
 });
 
+// delete
 router.delete('/:id', async (req, res) => {
     try {
         const { id } = req.params;
-
-        req.base.run(`DELETE FROM sample WHERE id = ?`, [id], function (err) {
-            if (err) return res.status(500).json({ message: err.message });
-            if (this.changes === 0) return res.status(404).json({ message: 'Fichier non trouvé' });
-    
-            res.json({ message: 'Fichier supprimé avec succès' });
-        });
+        res.status(200).json(await dao.delete(req.base, id));
     } 
     catch (err) {
         res.status(500).json({ message: err.message });
