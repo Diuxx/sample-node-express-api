@@ -8,13 +8,6 @@ module.exports = (app, config) => {
 const data = require('../data')(config);
 
     app.use(cors());
-    app.get('/', (req, res) => {
-        res.json({ 
-            'app': config.name,
-            'version': config.version
-        });
-    });
-    const database = { data: [ { 'name': 'Nicolas' }, { 'name': 'Paul' } ]};
     const routesDirectory = path.join(__dirname, './');
 
     // Lire tous les fichiers dans le dossier routes
@@ -34,4 +27,29 @@ const data = require('../data')(config);
             );
         }
     });
+
+    app.get('/', (req, res) => { 
+        // Récupérer les routes définies
+        const routes = app._router.stack
+            .filter(r => r.route)  // Filtrer les éléments qui contiennent des routes
+            .map(r => r.route.path); // Extraire le chemin des routes
+
+        // Générer le contenu HTML
+        const htmlContent = `
+        <html>
+            <head>
+                <title>${config.name} v ${config.version}</title>
+            </head>
+            <body>
+                <h1>${config.name} v ${config.version}</h1>
+                <h2>Liste des routes disponibles :</h2>
+                <ul>
+                    ${routes.map(route => `<li>${route}</li>`).join('')}
+                </ul>
+            </body>
+        </html>
+        `;
+
+        res.send(htmlContent);
+    });    
 };

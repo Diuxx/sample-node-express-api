@@ -1,5 +1,5 @@
 {
-    "name": "api-sample",
+    "name": "SAMPLE-API",
     "version": "1.0",
     "port": 3000,
     "data": "sample-db.sqlite",

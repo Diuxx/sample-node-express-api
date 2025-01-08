@@ -88,6 +88,7 @@ async function quitter() {
     const response = await showModal('Are you sure to disconnect ?');
     if (response == 'no') 
       return;
+    
     this.disconnect();
 }
 

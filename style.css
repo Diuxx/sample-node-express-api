@@ -87,14 +87,32 @@ body {
 
 /* editor */
 #size, #size-example { font-size: 0.7em;text-align: end;margin-right: 10px; }
-#editor, #editor-example { margin-top: 50px; }
-#editor pre, #editor-example pre { max-height: 450px; margin-top: 0; }
+#editor, #editor-example { margin-top: 20px; }
+#editor pre, #editor-example pre { margin-bottom: 0px; max-height: 450px; margin-top: 0; }
 #editor, #save, #disconnect { display: none; }
 
 /* shows messages */
 #m-error, #m-success { display: none; }
-#m-error { color: red; }
-#m-success { color: green; }
+#m-error { color: #ec7063; }
+#m-success { color: #7dcea0; }
+
+.msg-user {
+  font-size: 0.8em;
+}
+
+.serv-messages, .sss {
+  display: flex;
+  justify-content: flex-start;
+  margin-left: 20px;
+  margin-top: 10px;
+}
+
+.action {
+  padding-top: 10px;
+  display: flex;
+  gap: 10px;
+  justify-content: end;
+}
 
 button.save {
   padding: 10px 20px;
@@ -179,4 +197,12 @@ button.save:hover {
 .modal button.no {
   background-color: #f44336;
   color: white;
+}
+
+.connected-google-only {
+  display: none;
+  justify-content: center;
+  color: #f44336;
+  font-size: 1.2em;
+  border: 1px solid #f44336;
 }

@@ -112,8 +112,7 @@ exports.createUserWithGoogleUid = (connection, google_uid, google_name) => {
     return new Promise((resolve, reject) => {
         connection.run(
             `INSERT INTO user (id, name, google_uid, api_key) VALUES (?, ?, ?, ?)`,
-        [id, google_name, google_uid, key],
-        (err) => {
+            [id, google_name, google_uid, key], (err) => {
             if (err) {
                 if (err.message.includes("UNIQUE constraint failed")) {
                     reject(new Error("Utilisateur déjà existant."));
@@ -136,7 +135,7 @@ exports.createUserWithGoogleUid = (connection, google_uid, google_name) => {
  * @param {*} user_id the user id.
  * @returns the sample.
  */
-exports.create = (user_id) => {
+exports.create = (connection, user_id) => {
     const id = uuidv4();
     const createdAt = new Date().toISOString(), updatedAt = createdAt;
     return new Promise((resolve, reject) => {
@@ -176,7 +175,7 @@ exports.update = (connection, api_key, content) => {
             if (err) return reject(new Error(err.message));
             if (this.changes === 0) reject(new Error({ message: 'unable to find current api key.' }));
 
-                resolve({ message: success });
+            resolve({ message: "success" });
         });
     });
 }

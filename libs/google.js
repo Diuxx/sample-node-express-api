@@ -16,6 +16,7 @@ const auth = firebase.auth();
 // Fournisseur Google
 const provider = new firebase.auth.GoogleAuthProvider();
 
+// page elements
 const googleSignInBtn = document.getElementById('google-signin-btn');
 const signOutBtn = document.getElementById('google-logout-btn');
 const userPhoto = document.getElementById('user-photo');
@@ -24,12 +25,15 @@ const logoutElement = document.getElementById('logout');
 // verify connection state.
 auth.onAuthStateChanged((user) => {
     if (user) {
+        // hide before try to load.
+        console.log('(try to connect)');
         connectedShowElements(user);
-        connectApi();
+        connectApi(user.uid, user.displayName);
     } 
     else {
         // manage disconnected elements
         console.log("(disconnected)");
+        hideAllElements('.connected');
         showExample();
     }
 });
@@ -38,12 +42,13 @@ auth.onAuthStateChanged((user) => {
 googleSignInBtn.addEventListener('click', () => {
     auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
         .then(() => auth.signInWithPopup(provider))
-        .then((result) => {
+        .then(async (result) => {
             const user = result.user;
             connectedShowElements(user);
-            connectApi(user.uid);
+            const data = await retrieveApiKey(user.uid, user.displayName)
         })
         .catch((error) => {
+            disconnectedRemoveElements();
             console.error("Erreur d'authentification :", error.message);
         });
 });
@@ -57,16 +62,27 @@ signOutBtn.addEventListener('click', (event) => {
         });
 });
 
-function connectedShowElements(user) {
-    console.log(`(connected) uid : ${user.displayName} ${user.uid}`)
-
-    // update elements html
-    userPhoto.src = user.photoURL;
-    googleSignInBtn.style.display = 'none';
-    logoutElement.style.display = 'flex';
+function disconnect() {
+    auth.signOut()
+        .then(() => {
+            hideAllElements('.connected');
+            this.disconnectedRemoveElements();
+            showExample();
+        })
+        .catch((error) => {
+            console.error('Erreur lors de la déconnexion :', error);
+        });
 }
 
-function disconnectedRemoveElements(user) {
+function connectedShowElements(user) {
+    console.log(`(connected) uid : ${user.displayName} ${user.uid}`)
+    showNotification(`Connected with google account as ${user.displayName}`, 'success');
+
+    userPhoto.src = user.photoURL;
+}
+
+function disconnectedRemoveElements() {
     googleSignInBtn.style.display = 'inline-block';
     logoutElement.style.display = 'none';
+    userPhoto.src = '../libs/icons8-google.svg';
 }

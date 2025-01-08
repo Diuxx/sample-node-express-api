@@ -23,7 +23,7 @@
   <meta property="twitter:image" content="https://www.jsonbase.com/assets/twitter-image.png">
   
   <!-- Favicon -->
-  <link rel="icon" href="https://www.jsonbase.com/favicon.ico" type="image/x-icon">
+  <link rel="icon" href="./libs/json.svg" type="image/x-icon">
   
   <!-- Keywords (Optional for modern SEO but still useful for context) -->
   <meta name="keywords" content="JSONBase, JSON data, manage JSON, online JSON storage, 1 MB JSON, developer tools, data management, SaaS JSON">
@@ -37,6 +37,7 @@
 
   <!-- styles -->
   <link href="style.css" rel="stylesheet" />
+  <link href="libs/notification.css" rel="stylesheet" />
   <link href="libs/prism.css" rel="stylesheet" />
 </head>
 <body>
@@ -49,43 +50,45 @@
     </div>
   </div> 
   <div class="container">
-    <h1>Sample API</h1> 
+    <h1>Sample API <img src="./libs/json.svg" width="16"/></h1> 
     <h2>manage 1 mo of <i style="color: red;">JSON</i> data available everywhere.</h2>
 
-    <div class="connect">
+    <p style="font-size: 0.8em;">
+      Create a small database of up to 2 MB easily and quickly to test your ideas. <br />Connect with your Google account and enjoy!
+      <br /><br /><br />
+    </p>
+
+    <div class="connect disconnected">
       <button id="google-signin-btn" class="google-signin-btn">
         <img src="libs/icons8-google.svg" alt="Google Logo" />
         Se connecter avec Google
       </button>
     </div>
 
-    <button onclick="connectApi()">test</button>
-
-    <!-- API Key Input -->
-    <div class="api-key-container">
-      <label for="api-key" style="margin-right: 10px;">API Key :</label>
-      <input type="text" id="api-key" placeholder="Your current API Key">
-      <!-- <button onclick="connectApi()">Connect</button> -->
+    <div class="connected-google-only">
+        The json API service is off, try again later.
     </div>
 
     <!-- Editable Code Area -->
-    <div id="editor">
+    <div id="editor" class="connected">
       <div id="size"></div>
       <pre><code contenteditable="true" class="language-json" id="editable-code">p { color: red }</code></pre>
       <div class="serv-messages">
-        <span id="m-error"></span>
-        <span id="m-success"></span>
+        <span id="m-error" class="msg-user"></span>
+        <span id="m-success" class="msg-user"></span>
       </div>
     </div>
 
-    <div id="editor-example">
+    <div id="editor-example" class="disconnected">
       <div id="size-example"></div>
       <pre><code class="language-json" id="example-editable-code"></code></pre>
     </div>
 
-    <!-- Save Button -->
-    <button id="save" class="save" onclick="saveCode()">Sauvegarder</button>
-    <button id="disconnect" class="save" onclick="quitter()">Se déconnecter</button>
+    <!-- action buttons -->
+    <div class="action connected">
+      <button id="save" class="save connected" style="background-color: #7dcea0;" onclick="saveCode()">Save</button>
+      <button id="disconnect" class="save connected" style="background-color: #ec7063;" onclick="quitter()">Disconnect</button>
+    </div>
   </div>
 
   <!-- modals -->
@@ -97,90 +100,16 @@
     </div>
   </div>
 
+  <!-- notifications -->
+  <div class="notifications" id="notifications"></div>
+
   <!-- js-->
   <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-auth-compat.js"></script>
+  <script src="libs/notifications.js"></script>
   <script src="libs/api-queries.js"></script>
   <script src="libs/google.js"></script>
   <script src="libs/prism.js" data-manual></script>
   <script src="page.js"></script>
-  <script>
-    // mock pour tests.
-    const mockSampleId = "32c3707f-4ee4-491a-93a6-9ca6b828014b";
-    // const apiUrl = 'http://localhost:3000/sample';
-    let loading = false;
-
-    /* -------------- Functions -------------- */
-
-    /**
-     * 
-     **/
-    async function saveCode() {
-      const sampleId = document.getElementById("api-key").value;
-      const url = `http://localhost:3000/sample/${sampleId}`;
-
-      if (!isValidJSON(code.textContent)) {
-        console.error("Invalid json.");
-        displayMessage("Invalid json.", 'm-error');
-        return;
-      }
-
-      const data = { 
-        content: JSON.stringify(JSON.parse(code.textContent))
-      };
-      console.log(data, JSON.stringify(JSON.parse(code.textContent)));
-
-      try {
-            const response = await fetch(url, {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(data)
-            });
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-            const result = await response.json();
-            displayMessage("Modification effectuée avec succès.", 'm-success');
-            console.log("Réponse du serveur :", result);
-        } 
-        catch (error) {
-            displayMessage(error.message, 'm-error');
-            console.error("Erreur lors de la requête POST :", error);
-        }
-    }
-
-    function verifyJson(jsonString) {
-      try {
-        let cleanData = jsonString.trim();
-        cleanData = cleanData.replace(/\\n/g, '').replace(/\\"/g, '"').split('n/').join('');
-        // cleanData = JSON.parse(cleanData);
-
-        return cleanData; // JSON.stringify(cleanData, null, 2);
-      } 
-      catch (e) {
-        console.error("Erreur lors du nettoyage du JSON :", e);
-        return null; 
-      }
-    }
-
-    function persistConnection(apiKey) {
-      localStorage.setItem('sampleId', apiKey);
-      localStorage.setItem('isLogged', true);
-    }
-
-    function disconnect() {
-      localStorage.clear();
-      editor.style.display = 'none';
-      this.setSampleId('');
-    }
-
-    function isConnected() {
-      return localStorage.getItem('isLogged') !== null && 
-             localStorage.getItem('sampleId')?.includes('true') !== null;
-    }
-
-  </script>
 </body>
 </html>

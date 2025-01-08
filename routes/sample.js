@@ -3,7 +3,6 @@
 // routes/sample.js
 const express = require('express');
 const router = express.Router();
-const { v4: uuidv4 } = require('uuid');
 const dao = require('../data/sample.dao');
 
 // get all samples
@@ -25,7 +24,6 @@ router.get('/:id', async (req, res) => {
             res.status(400).json({ message: 'id is required.' });
             return;
         }
-
         res.json(await dao.getSampleContent(req.base, id));
     } 
     catch (err) {
@@ -41,7 +39,6 @@ router.get('/bykey/:id', async (req, res) => {
             res.status(400).json({ message: 'id is required.' });
             return;
         }
-
         res.status(200).json(await dao.getSampleContentByKey(req.base, id));
     } 
     catch (err) {
@@ -68,6 +65,9 @@ router.post('/', async (req, res) => {
 
 // create or get one sample
 router.post('/retrieve', async (req, res) => {
+    console.log(req.body);
+    let apiKey = null;
+
     try {
         const { google_uid, google_name } = req.body;
 
@@ -81,19 +81,24 @@ router.post('/retrieve', async (req, res) => {
             return;
         }
 
+        // --
         const exist = await dao.isGoogleAccExist(req.base, google_uid);
         if (exist) {
-            const apiKey = await dao.getUserApiKeyWithGoogleUid(req.base, google_uid);
-            res.status(200).json({ key: apiKey });
+            apiKey = await dao.getUserApiKeyWithGoogleUid(req.base, google_uid);
         }
         else {
             const user = await dao.createUserWithGoogleUid(req.base, google_uid, google_name);
-            if (user) {
-                // create sample
-                await dao.create(user.id);
-            }
-            res.status(200).json({ key: user.api_key });
+            console.log(user)
+
+            await dao.create(req.base, user.id);
+            apiKey = user.api_key;
         }
+
+        if (apiKey) {
+            const json = await dao.getSampleContentByKey(req.base, apiKey);
+            res.status(200).json({ key: apiKey, data: json });
+        } else 
+            throw 'unable to get api key.';
     }
     catch (err) {
         res.status(500).json({ message: err.message });
