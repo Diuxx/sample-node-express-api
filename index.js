@@ -7,11 +7,12 @@ const config = JSON.parse(readFileSync('config.json', 'utf-8'));
 console.log(`[${config.name}][✔] config loaded ⚙`);
 
 const express = require('express');
-const app = express()
-    .use(express.json());
+const app = express().use(express.json());
+app.config = config;
 
-require('./middleware')(app, config);
-require('./routes')(app, config);
+require('./logger')(app);
+require('./middleware')(app);
+require('./routes')(app);
 
-const PORT = config?.port || 3001;
-app.listen(PORT, () => console.log(`[${config.name}][✔] api : http://localhost:${PORT}/`));
+const PORT = app.config?.port || 3001;
+app.listen(PORT, () => console.log(`[${app.config.name}][✔] api : http://localhost:${PORT}/`));

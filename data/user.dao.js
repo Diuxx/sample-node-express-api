@@ -87,7 +87,17 @@ exports.update = (connection, name, user_id) => {
         if (err) reject(new Error(err.message));
         if (this.changes === 0) reject(new Error('unable to find current user.'));
         
-        resolve(user_id);
+        // Get the update user
+        connection.get(
+          `SELECT * FROM user WHERE id = ?`,
+          [user_id],
+          (err, row) => {
+            if (err) {
+              return reject(new Error(err.message));
+            }
+            resolve(row);
+          }
+        );
     });
   });
 }

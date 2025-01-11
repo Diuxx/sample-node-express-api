@@ -2,7 +2,7 @@
 
 const express = require('express');
 const cookieParser = require('cookie-parser');
-const logger = require('morgan');
+const morgan = require('morgan');
 const fileUpload = require('express-fileupload');
 const rateLimit = require('express-rate-limit');
 
@@ -13,10 +13,14 @@ const globalRateLimiter = rateLimit({
 });
 
 module.exports = (app) => {
-    app.use(logger('dev'));
+    const morganStream = {
+        write: (message) => app.logger.info(message.trim()), // Trim to remove extra newlines
+    };
+
+    app.use(morgan('dev', { stream: morganStream }));
     app.use(express.urlencoded({ extended: true }));
     app.use(express.json());
     app.use(cookieParser());
     app.use(fileUpload());
-    app.use(globalRateLimiter); 
+    app.use(globalRateLimiter);
 };

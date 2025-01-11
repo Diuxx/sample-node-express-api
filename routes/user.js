@@ -5,75 +5,117 @@ const express = require('express');
 const router = express.Router();
 const dao = require('../data/user.dao');
 
-// get all users
-router.get('/', async (req, res) => {
-    try {
+// schemas
+const userSchema = require('../schemas/user.schema');
+
+// middlewares
+const validate = require('../middleware/validate');
+const asyncHandler = require('../middleware/asyncHandler');
+
+/**
+ * @route GET /
+ * @description Fetches all records from the specified database and returns them as JSON.
+ * 
+ * @param {Object} req - HTTP request object.
+ * @param {string} req.base - Database to fetch records from.
+ * @param {Object} res - HTTP response object.
+ * @returns {void}
+ * 
+ * @middleware asyncHandler - Handles async errors.
+ * @throws {Error} - If dao.getAll fails.
+ **/
+router.get(
+    '/', 
+    asyncHandler(async (req, res) => {
+        // --
         const results = await dao.getAll(req.base);
         res.status(200).json(results);
-    } 
-    catch (err) {
-        res.status(500).json({ message: err.message });
-    }
-});
+    })
+);
 
-// get one user
-router.get('/:id', async (req, res) => {
-    try {
+/**
+ * @route GET /:id
+ * @description Retrieves a user by their ID.
+ * 
+ * @param {string} id - The ID of the user to retrieve.
+ * @returns {Object} The user object with a success status.
+ * @throws {Error} If retrieval fails, handled by asyncHandler.
+ **/
+router.get(
+    '/:id', 
+    asyncHandler(async (req, res) => {
+        // --
         const { id } = req.params;
         if (!id) {
             res.status(400).json({ message: 'id is required.' });
             return;
         }
 
-        res.json(await dao.getOne(req.base, id));
-    } 
-    catch (err) {
-        res.status(500).json({ message: err.message });
-    }
-});
+        var user = await dao.getOne(req.base, id);
 
-// create a user
-router.post('/', async (req, res) => {
-    try {
+        res.json({ status: 'success', data: user });
+    })
+);
+
+/**
+ * @route POST /
+ * @description Creates a new user.
+ * @param {string} name - The name of the user to create.
+ * @param {string} google_id - The Google ID associated with the user.
+ * @returns {Object} The created user object with a success status.
+ * @throws {Error} If creation fails, handled by asyncHandler.
+ * @middleware validate(userSchema) - Validates the request body against the userSchema.
+ **/
+router.post(
+    '/',
+    validate(userSchema),
+    asyncHandler(async (req, res) => {
+        // --
         const { name, google_id } = req.body;
-        const result = await dao.create(req.base, name, google_id);
+        const user = await dao.create(req.base, name, google_id);
 
-        res.status(201).json(result);
-    } 
-    catch (err) {
-        res.status(500).json({ message: err.message });
-    }
-});
+        res.status(201).json({ status: 'success', data: user });
+    })
+);
 
-// put a user
-router.put('/:id', async (req, res) => {
-    try {
+/**
+ * @route PUT /:id
+ * @description Updates a resource (user) by its ID.
+ * @param {string} id - The ID of the user to update.
+ * @param {string} name - The new name to update the user with.
+ * @returns {Object} The updated user object with a success status.
+ * @throws {Error} If update fails, handled by asyncHandler.
+ * @middleware validate(userSchema) - Validates the request body against the userSchema. 
+ **/
+router.put(
+    '/:id',
+    validate(userSchema),
+    asyncHandler(async (req, res) => {
+        // --
         const { id } = req.params;
         const { name } = req.body;
 
-        if (name == undefined) {
-            res.status(301).json({ message: 'the name is required.' });
-            return;
-        }
+        const user = await dao.update(req.base, name, id);
+        res.status(200).json({ status: 'success', data: user });
+    })
+);
 
-        const user_id = await dao.update(req.base, name, id);
-        res.status(200).json({ id: user_id });
-    } 
-    catch (err) {
-        console.log(err);
-        res.status(500).json({ message: err.message });
-    }
-});
-
-// delete user
-router.delete('/:id', async (req, res) => {
-    try {
+/**
+ * @route DELETE /:id
+ * @description Deletes a resource by its ID.
+ * @param {string} id - The ID of the resource to delete.
+ * @returns {Object} Status of the operation (success).
+ * @throws {Error} If deletion fails, handled by asyncHandler.
+ **/
+router.delete(
+    '/:id', 
+    asyncHandler(async (req, res) => {
+        // --
         const { id } = req.params;
-        res.status(200).json(await dao.delete(req.base, id));
-    } 
-    catch (err) {
-        res.status(500).json({ message: err.message });
-    }
-});
+
+        await dao.delete(req.base, id)
+        res.status(200).json({ status: 'success' });
+    })
+);
 
 module.exports = router;
