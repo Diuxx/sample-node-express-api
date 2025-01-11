@@ -4,17 +4,31 @@ const { v4: uuidv4 } = require('uuid');
 
 /**
  * Get all sample.
- * @param {*} connection the data connection object. 
+ * @param {*} db the data db object. 
  * @returns all sample.
  */
-exports.getAll = (connection) => {
+exports.getAll = (db, limit, offset) => {
     return new Promise((resolve, reject) => {
-        connection.all(
-          `SELECT id, content, created_at, updated_at FROM sample`,
-          (err, rows) => {
+        db.all(`SELECT id, content, created_at, updated_at FROM sample LIMIT ? OFFSET ?`, [limit, offset], (err, rows) => {
             if (err) reject(new Error(err.message));
             
-            resolve(rows);
+            // count all samples
+            const totalQuery = `SELECT COUNT(*) AS total FROM sample`;
+            const totalResult = db.get(totalQuery);
+            const total = totalResult.total;
+            let result = {
+              status: 'success',
+              data: rows,
+              pagination: {
+                  total,
+                  limit,
+                  offset,
+                  nextOffset: offset + limit < total ? offset + limit : null,
+                  prevOffset: offset - limit >= 0 ? offset - limit : null,
+              },
+            }
+
+            resolve(result);
           }
         );
       });
@@ -22,13 +36,13 @@ exports.getAll = (connection) => {
 
 /**
  * Gets sample content by id.
- * @param {*} connection the data connection object. 
+ * @param {*} db the data db object. 
  * @param {*} id the sample id.
  * @returns the sample content.
  */
-exports.getSampleContent = (connection, id) => {
+exports.getSampleContent = (db, id) => {
     return new Promise((resolve, reject) => {
-        connection.get(
+        db.get(
           `SELECT content FROM sample WHERE id = ?`, [id],
           (err, row) => {
             if (err) reject(new Error(err.message));
@@ -42,13 +56,13 @@ exports.getSampleContent = (connection, id) => {
 
 /**
  * Get sample content by api key.
- * @param {*} connection the data connection object.
+ * @param {*} db the data db object.
  * @param {*} api_key the user api key
  * @returns the sample content.
  */
-exports.getSampleContentByKey = (connection, api_key) => {
+exports.getSampleContentByKey = (db, api_key) => {
     return new Promise((resolve, reject) => {
-        connection.get(
+        db.get(
             `SELECT sample.content FROM user JOIN sample ON user.id = sample.user_id WHERE api_key = ? LIMIT 1`,
             [api_key],
             (err, row) => {
@@ -63,13 +77,13 @@ exports.getSampleContentByKey = (connection, api_key) => {
 
 /**
  * Verify if current user account exist in db.
- * @param {*} connection the data connection object.
+ * @param {*} db the data db object.
  * @param {*} googleUid the user google uid.
  * @returns true if the google account exist in database.
  */
-exports.isGoogleAccExist = (connection, googleUid) => {
+exports.isGoogleAccExist = (db, googleUid) => {
     return new Promise((resolve, reject) => {
-        connection.get(
+        db.get(
           `SELECT 1 FROM user WHERE google_uid = ? LIMIT 1`,
           [googleUid],
           (err, row) => {
@@ -83,13 +97,13 @@ exports.isGoogleAccExist = (connection, googleUid) => {
 
 /**
  * Get the user api key from google uid.
- * @param {*} connection the data connection object.
+ * @param {*} db the data db object.
  * @param {*} googleUid the user google uid.
  * @returns the api key for entered google uid.
  */
-exports.getUserApiKeyWithGoogleUid = (connection, googleUid) => {
+exports.getUserApiKeyWithGoogleUid = (db, googleUid) => {
     return new Promise((resolve, reject) => {
-        connection.get(
+        db.get(
             `SELECT user.api_key FROM user JOIN sample ON user.id = sample.user_id WHERE google_uid = ? LIMIT 1`,
             [googleUid],
             (err, row) => {
@@ -102,15 +116,15 @@ exports.getUserApiKeyWithGoogleUid = (connection, googleUid) => {
 
 /**
  * Create user with google uid.
- * @param {*} connection the data connection object.
+ * @param {*} db the data db object.
  * @param {*} google_uid the user google uid.
  * @param {*} google_name the user name.
  * @returns created user object.
  */
-exports.createUserWithGoogleUid = (connection, google_uid, google_name) => {
+exports.createUserWithGoogleUid = (db, google_uid, google_name) => {
     const id = uuidv4(), key = uuidv4();
     return new Promise((resolve, reject) => {
-        connection.run(
+        db.run(
             `INSERT INTO user (id, name, google_uid, api_key) VALUES (?, ?, ?, ?)`,
             [id, google_name, google_uid, key], (err) => {
             if (err) {
@@ -135,11 +149,11 @@ exports.createUserWithGoogleUid = (connection, google_uid, google_name) => {
  * @param {*} user_id the user id.
  * @returns the sample.
  */
-exports.create = (connection, user_id) => {
+exports.create = (db, user_id) => {
     const id = uuidv4();
     const createdAt = new Date().toISOString(), updatedAt = createdAt;
     return new Promise((resolve, reject) => {
-        connection.run(
+        db.run(
             `INSERT INTO sample (id, content, created_at, updated_at, user_id) VALUES (?, ?, ?, ?, ?)`,
         [id, JSON.stringify({}), createdAt, updatedAt, user_id],
         (err) => {
@@ -167,9 +181,9 @@ exports.create = (connection, user_id) => {
  * @param {*} content the content of the sample
  * @returns the sample id.
  */
-exports.update = (connection, api_key, content) => {
+exports.update = (db, api_key, content) => {
     return new Promise((resolve, reject) => {
-        connection.run(
+        db.run(
             `UPDATE sample SET content = ?, updated_at = ? WHERE sample.user_id IN (SELECT user.id FROM user WHERE user.api_key = ?)`,
             [JSON.stringify(content), new Date().toISOString(), api_key], (err) => {
             if (err) return reject(new Error(err.message));
@@ -182,13 +196,13 @@ exports.update = (connection, api_key, content) => {
 
 /**
  * Delete current sample.
- * @param {*} connection the data connection object.
+ * @param {*} db the data db object.
  * @param {*} id the sample id.
  * @returns success message.
  */
-exports.delete = (connection, id) => {
+exports.delete = (db, id) => {
     return new Promise((resolve, reject) => {
-        connection.run(`DELETE FROM sample WHERE id = ?`, [id], (err) => {
+        db.run(`DELETE FROM sample WHERE id = ?`, [id], (err) => {
             if (err) return reject(new Error(err.message));
             if (this.changes === 0) reject(new Error({ message: 'unable to find current sample.' }));
 

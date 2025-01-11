@@ -27,8 +27,11 @@ const asyncHandler = require('../middleware/asyncHandler');
 router.get(
     '/', 
     asyncHandler(async (req, res) => {
-        // --
-        const results = await dao.getAll(req.base);
+        // Récupérer les paramètres de pagination depuis la requête
+        const limit = parseInt(req.query.limit) || 10;
+        const offset = parseInt(req.query.offset) || 0;
+
+        const results = await dao.getAll(req.base, limit, offset);
         res.status(200).json(results);
     })
 );

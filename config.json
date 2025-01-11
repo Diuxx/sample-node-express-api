@@ -5,5 +5,11 @@
     "data": "sample-db.sqlite",
     "pathData": "C:/Users/nicol/Desktop/Projets/bases",
     "pathLog": "C:/Users/nicol/Desktop/Projets/logs",
-    "sample": true
+    "sample": true,
+    "allowedOrigins": [
+        "localhost",
+        "http://localhost",
+        "https://nicoblog.dev",
+        "http://nicoblog.dev"
+    ]
 }

@@ -3,8 +3,19 @@
 const { readFileSync } = require('fs')
 
 // config
-const config = JSON.parse(readFileSync('config.json', 'utf-8'));
-console.log(`[${config.name}][✔] config loaded ⚙`);
+let config;
+try {
+    config = JSON.parse(readFileSync('config.json', 'utf-8'));
+    if (!config.name || !config.port) {
+        throw new Error('"name" and "port" are required in config.json');
+    }
+
+    console.log(`[${config.name}][✔] config loaded ⚙`);
+}
+catch (err) {
+    console.error(`[Error][✘] Failed to load config: ${err.message}`);
+    process.exit(1);
+}
 
 const express = require('express');
 const app = express().use(express.json());

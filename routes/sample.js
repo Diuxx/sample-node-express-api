@@ -27,7 +27,10 @@ const sampleSchema = require('../schemas/sample.schema');
 router.get(
     '/',
     asyncHandler(async (req, res) => {
-        const results = await dao.getAll(req.base);
+        const limit = parseInt(req.query.limit) || 10;
+        const offset = parseInt(req.query.offset) || 0;
+        
+        const results = await dao.getAll(req.base, limit, offset);
         res.status(200).json(results);
     })
 );
@@ -60,7 +63,9 @@ router.get(
             return;
         }
 
-        res.json(await dao.getSampleContent(req.base, id));
+        let sample = await dao.getSampleContent(req.base, id)
+
+        res.status(200).json(sample);
     })
 );
 
@@ -75,7 +80,9 @@ router.get(
             return;
         }
 
-        res.status(200).json(await dao.getSampleContentByKey(req.base, id));
+        let sample = await dao.getSampleContentByKey(req.base, id)
+
+        res.status(200).json(sample);
     })
 );
 
@@ -124,7 +131,7 @@ router.post(
         }
         else {
             const user = await dao.createUserWithGoogleUid(req.base, google_uid, google_name);
-            
+
             await dao.create(req.base, user.id);
             apiKey = user.api_key;
         }
