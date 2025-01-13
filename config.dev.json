@@ -5,6 +5,7 @@
     "data": "sample-db.sqlite",
     "pathData": "C:/Users/nicol/Desktop/Projets/bases",
     "pathLog": "C:/Users/nicol/Desktop/Projets/logs",
+    "logName": "sample.log",
     "sample": true,
     "allowedOrigins": [
         "localhost",

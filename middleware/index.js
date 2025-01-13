@@ -17,7 +17,7 @@ module.exports = (app) => {
         write: (message) => app.logger.info(message.trim()), // Trim to remove extra newlines
     };
 
-    app.use(morgan('dev', { stream: morganStream }));
+    app.use(morgan(':method :url :status :res[content-length] - :response-time ms', { stream: morganStream }));
     app.use(express.urlencoded({ extended: true }));
     app.use(express.json());
     app.use(cookieParser());

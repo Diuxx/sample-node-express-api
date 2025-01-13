@@ -26,6 +26,7 @@ module.exports = (app) => {
                 app.use(routeName, 
                     (req, res, next) => {
                         req.base = data; // inject database.
+                        req.config = app.config;
                         next();
                     },    
                     require(path.join(routesDirectory, file))

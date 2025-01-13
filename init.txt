@@ -8,6 +8,8 @@ npm i uuid
 npm i morgan
 npm i express-rate-limit
 
+npm i node-schedule
+
 # queries
 
 # unix
