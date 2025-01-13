@@ -4,6 +4,7 @@
 const express = require('express');
 const router = express.Router();
 const dao = require('../data/sample.dao');
+const utils = require('../utils');
 
 // middlewares
 const validate = require('../middleware/validate');
@@ -31,7 +32,7 @@ router.get(
         const offset = parseInt(req.query.offset) || 0;
         
         const results = await dao.getAll(req.base, limit, offset);
-        res.status(200).json(results);
+        res.status(200).json(utils.formatHttpSuccess(results));
     })
 );
 
@@ -64,12 +65,17 @@ router.get(
         }
 
         let sample = await dao.getSampleContent(req.base, id)
-
-        res.status(200).json(sample);
+        res.status(200).json(utils.formatHttpSuccess(sample));
     })
 );
 
-// get one sample by apiKey
+/**
+ * @route   GET /bykey/:id
+ * @desc    Récupère un contenu spécifique à partir de la clé (id)
+ * @param   {string} id - Identifiant de la clé passée dans l'URL
+ * @returns {object} 200 - Contenu formaté en cas de succès
+ * @returns {object} 400 - Erreur si l'id est manquant
+ */
 router.get(
     '/bykey/:id', 
     asyncHandler(async (req, res) => {
@@ -81,12 +87,17 @@ router.get(
         }
 
         let sample = await dao.getSampleContentByKey(req.base, id)
-
-        res.status(200).json(sample);
+        res.status(200).json(utils.formatHttpSuccess(sample));
     })
 );
 
-// post one sample
+/**
+ * @route   POST /
+ * @desc    Creates a new entry based on the provided data
+ * @param   {string} userId - User identifier provided in the request body
+ * @returns {object} 201 - Success with the ID and URL of the new entry
+ * @returns {object} 400 - Error if the userId field is missing
+ */
 router.post(
     '/', 
     asyncHandler(async (req, res) => {
@@ -98,7 +109,7 @@ router.post(
         }
 
         await dao.create(req.base, userId);
-        res.status(201).json({ id, url: `/sample/${id}` });
+        res.status(201).json(utils.formatHttpSuccess({ id, url: `/sample/${id}` }));
     })
 );
 
@@ -107,39 +118,19 @@ router.post(
     '/retrieve', 
     asyncHandler(async (req, res) => {
         // --
-        let apiKey = null;
         const { google_uid, google_name } = req.body;
-
         if (!google_uid) {
             res.status(400).json({ message: 'google_uid is required.' });
             return;
         }
 
         if (!google_name) {
-            res.status(400).json({ message: 'google_name is required.' });
+            res.status(400).json({ status: 'error', data: { message: 'google_name is required.' } });
             return;
         }
 
-        // --
-        const exist = await dao.isGoogleAccExist(req.base, google_uid);
-        if (!exist) {
-            // create user account here.
-        }
-
-        if (exist) {
-            apiKey = await dao.getUserApiKeyWithGoogleUid(req.base, google_uid);
-        }
-        else {
-            const user = await dao.createUserWithGoogleUid(req.base, google_uid, google_name);
-
-            await dao.create(req.base, user.id);
-            apiKey = user.api_key;
-        }
-
-        if (apiKey) {
-            const json = await dao.getSampleContentByKey(req.base, apiKey);
-            res.status(200).json({ key: apiKey, data: json });
-        } else throw 'unable to get api key.';
+        var result = await dao.getSampleContentOrCreate(req.base, google_uid, google_name);
+        res.status(200).json(utils.formatHttpSuccess(result));
     })
 );
 
@@ -159,7 +150,8 @@ router.put(
         if (typeof content == 'string')
             content = JSON.parse(content);
 
-        res.status(200).json(await dao.update(req.base, id, content));
+        let result = await dao.update(req.base, id, content);
+        res.status(200).json(utils.formatHttpSuccess(result));
     })
 );
 
@@ -168,7 +160,8 @@ router.delete(
     '/:id',
     asyncHandler(async (req, res) => {
         const { id } = req.params;
-        res.status(200).json(await dao.delete(req.base, id));
+        let result = await dao.delete(req.base, id);
+        res.status(200).json(utils.formatHttpSuccess(result));
    })
 );
 

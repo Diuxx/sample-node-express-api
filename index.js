@@ -4,8 +4,10 @@ const { readFileSync } = require('fs')
 
 // config
 let config;
+const env = process.argv[2] || undefined;
+console.log(`env => ${env}`);
 try {
-    config = JSON.parse(readFileSync('config.json', 'utf-8'));
+    config = JSON.parse(readFileSync(`config.${env}.json`, 'utf-8'));
     if (!config.name || !config.port) {
         throw new Error('"name" and "port" are required in config.json');
     }

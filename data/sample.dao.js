@@ -1,6 +1,7 @@
 'use strict';
 
 const { v4: uuidv4 } = require('uuid');
+const utils = require('../utils');
 
 /**
  * Get all sample.
@@ -51,7 +52,47 @@ exports.getSampleContent = (db, id) => {
             resolve(JSON.parse(row.content));
           }
         );
-      });
+    });
+}
+
+/**
+ * 
+ * @param {*} db 
+ * @param {*} uid 
+ * @param {*} google_name 
+ * @returns 
+ */
+exports.getSampleContentOrCreate = async (db, uid, google_name) => {
+    try {
+        let apiKey = null, json = null;
+        console.log(db);
+        await utils.runQuery(db, 'BEGIN TRANSACTION');
+
+        const userExists = await utils.getQuery(db, `SELECT 1 FROM user WHERE google_uid = ? LIMIT 1`, [uid]);
+        if (!userExists) {
+            // --
+            const user = await this.createUserWithGoogleUid(db, uid, google_name);
+            await this.create(db, user.id); // create the user.
+            apiKey = user.api_key;
+        } 
+        else {
+            apiKey = await this.getUserApiKeyWithGoogleUid(db, uid);
+        }
+
+        if (apiKey) {
+            json = await this.getSampleContentByKey(db, apiKey);
+        } 
+        else throw new Error('unable to retrieve the api key.');
+
+        if (!json) throw new Error('unable to retrieve json file.');
+        
+        await utils.runQuery(db, 'COMMIT'); // validate
+        return { key: apiKey, data: json };
+    } 
+    catch (error) {
+        await utils.runQuery(db, 'ROLLBACK');
+        throw error;
+    }
 }
 
 /**
@@ -92,7 +133,7 @@ exports.isGoogleAccExist = (db, googleUid) => {
             resolve(!!row);
           }
         );
-      });
+    });
 }
 
 /**
